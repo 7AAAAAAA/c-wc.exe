@@ -5,7 +5,11 @@ int words(char* name);
 int lines(char* name);
 int main(int argc, char* argv[]){
     int num;
-    if(strcmp(argv[1],"-c") == 0) {
+    if(strcmp(argv[1],"help") == 0) {
+        printf("    -c file.c  返回文件file.c的字符数。\n");
+        printf("    -w file.c  返回文件file.c的词的数目。\n");
+        printf("    -l file.c  返回文件file.c的行数。\n");
+    }else if(strcmp(argv[1],"-c") == 0) {
         if((num = chars(argv[2])) >= 0) {
             printf("char: %d\n",num);
         }
@@ -19,6 +23,7 @@ int main(int argc, char* argv[]){
         }
     }else {
         printf("\'%s\'命令不存在\n",argv[1]);
+        printf("可通过 help参数查看可使用命令\n");
     }
     return 0;
 }
