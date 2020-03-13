@@ -5,21 +5,26 @@ int words(char* name);
 int lines(char* name);
 int mores(char* name);
 int main(int argc, char* argv[]){
-    if(strcmp(argv[1],"help") == 0) {
-        printf("    -c file.c  返回文件file.c的字符数。\n");
-        printf("    -w file.c  返回文件file.c的词的数目。\n");
-        printf("    -l file.c  返回文件file.c的行数。\n");
-        printf("    -a file.c  返回文件file.c的空行/代码行/注释行。\n");
-    }else if(strcmp(argv[1],"-c") == 0) {
-        chars(argv[2]);
-    }else if(strcmp(argv[1],"-w") == 0) {
-        words(argv[2]);
-    }else if(strcmp(argv[1],"-l") == 0) {
-        lines(argv[2]);
-    }else if(strcmp(argv[1],"-a") == 0) {
-        mores(argv[2]);
+    if(argc > 1){
+        if(strcmp(argv[1],"help") == 0) {
+            printf("    -c file.c  返回文件file.c的字符数。\n");
+            printf("    -w file.c  返回文件file.c的词的数目。\n");
+            printf("    -l file.c  返回文件file.c的行数。\n");
+            printf("    -a file.c  返回文件file.c的空行/代码行/注释行。\n");
+        }else if(strcmp(argv[1],"-c") == 0) {
+            chars(argv[2]);
+        }else if(strcmp(argv[1],"-w") == 0) {
+            words(argv[2]);
+        }else if(strcmp(argv[1],"-l") == 0) {
+            lines(argv[2]);
+        }else if(strcmp(argv[1],"-a") == 0) {
+            mores(argv[2]);
+        }else {
+            printf("\'%s\'命令不存在\n",argv[1]);
+            printf("可通过 help参数查看可使用命令\n");
+        }
     }else {
-        printf("\'%s\'命令不存在\n",argv[1]);
+        printf("缺少参数\n");
         printf("可通过 help参数查看可使用命令\n");
     }
     return 0;
@@ -168,7 +173,7 @@ int mores(char* name){
                         }
                     }
                 }
-            }else if(ch >='\x21' && ch <= '\x7E'){
+            }else if(ch >'\x20'){   //不知道后面什么情况，bug待定
                 if(flag == 0){
                     flag = 1;
                 }else if(flag == 1) {
