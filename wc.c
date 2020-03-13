@@ -3,24 +3,21 @@
 int chars(char* name);
 int words(char* name);
 int lines(char* name);
+int mores(char* name);
 int main(int argc, char* argv[]){
-    int num;
     if(strcmp(argv[1],"help") == 0) {
         printf("    -c file.c  返回文件file.c的字符数。\n");
         printf("    -w file.c  返回文件file.c的词的数目。\n");
         printf("    -l file.c  返回文件file.c的行数。\n");
+        printf("    -a file.c  返回文件file.c的空行/代码行/注释行。\n");
     }else if(strcmp(argv[1],"-c") == 0) {
-        if((num = chars(argv[2])) >= 0) {
-            printf("char: %d\n",num);
-        }
+        chars(argv[2]);
     }else if(strcmp(argv[1],"-w") == 0) {
-        if((num = words(argv[2])) >= 0) {
-            printf("word: %d\n",num);
-        }
+        words(argv[2]);
     }else if(strcmp(argv[1],"-l") == 0) {
-        if((num = lines(argv[2])) >= 0) {
-            printf("line: %d\n",num);
-        }
+        lines(argv[2]);
+    }else if(strcmp(argv[1],"-a") == 0) {
+        mores(argv[2]);
     }else {
         printf("\'%s\'命令不存在\n",argv[1]);
         printf("可通过 help参数查看可使用命令\n");
@@ -31,7 +28,7 @@ int main(int argc, char* argv[]){
     参数：
         name 查询的文件名
     返回：
-        count 文件中的字符数 包括换行符、tab和空格都计入内
+        count 文件中的字符数 包括可显示字符和不可显示字符
 */
 int chars(char* name){
     FILE *fp;
@@ -39,7 +36,7 @@ int chars(char* name){
     int count = 0;
     if((fp = fopen(name,"r")) == NULL ){
         printf("error: cannot to find the file or to open this file.\n");
-        return -1;
+        count = -1;
     }
     else {
         while((ch = fgetc(fp)) != EOF) {
@@ -47,7 +44,10 @@ int chars(char* name){
         }
     }
     fclose(fp);
-    return count;
+    if(count >= 0) {
+         printf("file: %s\n    char: %d\n",name,count);
+    }
+    return 0;
 }
 /*
     参数：
@@ -62,7 +62,7 @@ int words(char* name){
     int count = 0;
     if((fp = fopen(name,"r")) == NULL ){
         printf("error: cannot to find the file or to open this file.\n");
-        return -1;
+        count = -1;
     }
     else {
         while((ch = fgetc(fp)) != EOF) {
@@ -80,6 +80,9 @@ int words(char* name){
         }
     }
     fclose(fp);
+    if(count >= 0) {
+         printf("file: %s\n    word: %d\n",name,count);
+    }
     return count;
 }
 /*
@@ -95,7 +98,7 @@ int lines(char* name){
     int flag = 0;
     if((fp = fopen(name,"r")) == NULL ){
         printf("error: cannot to find the file or to open this file.\n");
-        return -1;
+        count = -1;
     }
     else {
         while((ch = fgetc(fp)) != EOF) {
@@ -109,5 +112,84 @@ int lines(char* name){
         }
     }
     fclose(fp);
+    if(count >= 0) {
+         printf("file: %s\n    line: %d\n",name,count);
+    }
     return count;
+}
+/*
+    参数：
+        name 查询的文件名
+    返回：
+        count 文件中的空行/代码行/注释行
+*/
+int mores(char* name){
+    FILE *fp;
+    int ch;
+    int count[3] = {0,0,0};
+    int flag = 0; //超过一个可显示字符才会为1
+    if((fp = fopen(name,"r")) == NULL ){
+        printf("error: cannot to find the file or to open this file.\n");
+        count[0] = -1;
+    }
+    else {
+        while((ch = fgetc(fp)) != EOF) {
+            if(ch == '/') { //遇到第一个/
+                if((ch = fgetc(fp)) != EOF){
+                    if(ch == '/') {
+                        count[2]++;
+                        if(flag == 2) {
+                            count[2]--;
+                            count[1]++;
+                        }
+                        while((ch = fgetc(fp)) != EOF) {
+                            if(ch == '\n') {
+                                flag = 0;
+                                break;
+                            }
+                        }
+                    }else if(ch == '*') {
+                        count[2]++;
+                        if(flag == 2) {
+                            count[2]--;
+                            count[1]++;
+                        }
+                        while((ch = fgetc(fp)) != EOF) {
+                            if(ch == '\n') {
+                                count[2]++;
+                            }else if(ch == '*') {
+                                if((ch = fgetc(fp)) != EOF) {
+                                    if(ch == '/') {
+                                        flag = 0;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }else if(ch >='\x21' && ch <= '\x7E'){
+                if(flag == 0){
+                    flag = 1;
+                }else if(flag == 1) {
+                    flag = 2;
+                }
+            }else if(ch == '\n') {
+                if(flag == 0 || flag == 1){
+                    count[0]++;
+                }else if(flag == 2){
+                    count[1]++;
+                }
+                flag = 0;
+            }else {
+                continue;
+            }
+
+        }
+    }
+    fclose(fp);
+    if(count[0] >= 0) {
+         printf("file: %s\n    empty:%d\t code: %d\tnote: %d\n",name,count[0],count[1],count[2]);
+    }
+    return 0;
 }
