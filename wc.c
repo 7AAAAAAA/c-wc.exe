@@ -1,30 +1,60 @@
 #include <stdio.h>
 #include <string.h>
+#include <io.h>
+#include <stdlib.h>
+int somecmdselect(char* cmd,char* file);
 int chars(char* name);
 int words(char* name);
 int lines(char* name);
 int mores(char* name);
+int watchfiles(char* folder,char* factor,char* argv[]);
 int main(int argc, char* argv[]){
     if(argc > 1){
-        if(strcmp(argv[1],"help") == 0) {
-            printf("    -c file.c  返回文件file.c的字符数。\n");
-            printf("    -w file.c  返回文件file.c的词的数目。\n");
-            printf("    -l file.c  返回文件file.c的行数。\n");
-            printf("    -a file.c  返回文件file.c的空行/代码行/注释行。\n");
-        }else if(strcmp(argv[1],"-c") == 0) {
-            chars(argv[2]);
-        }else if(strcmp(argv[1],"-w") == 0) {
-            words(argv[2]);
-        }else if(strcmp(argv[1],"-l") == 0) {
-            lines(argv[2]);
-        }else if(strcmp(argv[1],"-a") == 0) {
-            mores(argv[2]);
+        if(strcmp(argv[1],"-s") == 0){
+            if(argc > 3){
+                watchfiles(".","*.c",argv);
+            }else {
+                printf("缺少参数\n");
+                printf("可通过 help参数查看可使用命令\n");
+            }
         }else {
-            printf("\'%s\'命令不存在\n",argv[1]);
-            printf("可通过 help参数查看可使用命令\n");
+            somecmdselect(argv[1],argv[2]);
         }
     }else {
         printf("缺少参数\n");
+        printf("可通过 help参数查看可使用命令\n");
+    }
+    return 0;
+}
+/*
+    参数：
+        argv[] 输入的参数
+    返回：
+        0 不满足这个函数中任何一个可使用的命令
+        1 已使用某一命令
+*/
+int somecmdselect(char* cmd,char* file) {
+    if(strcmp(cmd,"help") == 0) {
+        printf("    -c file.c  返回文件file.c的字符数\n");
+        printf("    -w file.c  返回文件file.c的词的数目\n");
+        printf("    -l file.c  返回文件file.c的行数\n");
+        printf("    -a file.c  返回文件file.c的空行/代码行/注释行\n");
+        printf("    -s a b     返回当前目录及子目录中符合b条件的a操作\n");
+        printf("               a可为-c/-w/-l/-a\n");
+        printf("               b可为*/*.c等（此处仅支持*.c）");
+    }else if(!file){
+        printf("缺少参数\n");
+        printf("可通过 help参数查看可使用命令\n");
+    }else if(strcmp(cmd,"-c") == 0) {
+        chars(file);
+    }else if(strcmp(cmd,"-w") == 0) {
+        words(file);
+    }else if(strcmp(cmd,"-l") == 0) {
+        lines(file);
+    }else if(strcmp(cmd,"-a") == 0) {
+        mores(file);
+    }else {
+        printf("\'%s\'命令不存在\n",cmd);
         printf("可通过 help参数查看可使用命令\n");
     }
     return 0;
@@ -40,7 +70,8 @@ int chars(char* name){
     int ch;
     int count = 0;
     if((fp = fopen(name,"r")) == NULL ){
-        printf("error: cannot to find the file or to open this file.\n");
+        printf("file: %s\n",name);
+        printf("错误：找不到该文件或者打不开该文件\n");
         count = -1;
     }
     else {
@@ -66,7 +97,8 @@ int words(char* name){
     int flag = 0;
     int count = 0;
     if((fp = fopen(name,"r")) == NULL ){
-        printf("error: cannot to find the file or to open this file.\n");
+        printf("file: %s\n",name);
+        printf("错误：找不到该文件或者打不开该文件\n");
         count = -1;
     }
     else {
@@ -102,7 +134,8 @@ int lines(char* name){
     int count = 0;
     int flag = 0;
     if((fp = fopen(name,"r")) == NULL ){
-        printf("error: cannot to find the file or to open this file.\n");
+        printf("file: %s\n",name);
+        printf("错误：找不到该文件或者打不开该文件\n");
         count = -1;
     }
     else {
@@ -134,7 +167,8 @@ int mores(char* name){
     int count[3] = {0,0,0};
     int flag = 0; //超过一个可显示字符才会为1
     if((fp = fopen(name,"r")) == NULL ){
-        printf("error: cannot to find the file or to open this file.\n");
+        printf("file: %s\n",name);
+        printf("错误：找不到该文件或者打不开该文件\n");
         count[0] = -1;
     }
     else {
@@ -196,5 +230,54 @@ int mores(char* name){
     if(count[0] >= 0) {
          printf("file: %s\n    empty:%d\t code: %d\tnote: %d\n",name,count[0],count[1],count[2]);
     }
+    return 0;
+}
+/*
+    参数：
+        folder 遍历的目录
+        factor 搜索条件
+        argv[] 执行的命令
+    返回：0
+*/
+int watchfiles(char* folder,char* factor,char* argv[]){
+    struct _finddata_t f;
+    long handle;
+    char* currentfactor = (char*)malloc(sizeof(char*)*(strlen(folder)+strlen(factor)+2));//存放当前目录的factor
+    char* currentfolder= (char*)malloc(sizeof(char*)*(strlen(folder)+strlen(factor)+2));//当前目录
+    char* path = (char*)malloc(sizeof(char*)*(strlen(folder)+2));
+    strcpy(path,folder);
+    strcpy(currentfactor,strcat(path,"/"));
+    strcpy(currentfolder,path);
+    handle = _findfirst(strcat(currentfactor,factor),&f);
+    if(handle == -1L) {
+        return 0;
+    }else {
+        do{
+            if(f.attrib != _A_SUBDIR){
+                char* name = (char*)malloc(sizeof(char*)*(strlen(path)+strlen(f.name)));
+                strcpy(name,path);
+                somecmdselect(argv[2],strcat(name,f.name));
+                free(name);
+            }
+        }while(_findnext(handle,&f) == 0);
+    }
+    free(currentfactor);
+    _findclose(handle);
+    handle = _findfirst(strcat(currentfolder,"*"),&f);
+    if(handle == -1L) {
+        return 0;
+    }else {
+        do{
+            if(f.attrib == _A_SUBDIR && strcmp(f.name,".") && strcmp(f.name,"..")){
+                char* newpath = (char*)malloc(sizeof(char*)*(strlen(path)+strlen(f.name)));
+                strcpy(newpath,path);
+                watchfiles(strcat(newpath,f.name),factor,argv);
+                free(newpath);
+            }
+        }while(_findnext(handle,&f) == 0);
+    }
+    _findclose(handle);
+    free(currentfolder);
+    free(path);
     return 0;
 }
